@@ -1,0 +1,60 @@
+version: "3"
+
+tasks:
+  install-deps:
+    cmds:
+      - go mod tidy
+
+  build:
+    desc: "Build the app"
+    deps: [install-deps]
+    cmds:
+      - go build -o bin/go-task-play cmd/main.go
+    sources:
+      - "**/*.go"
+      - go.mod
+    generates:
+      - bin/go-task-play
+
+  build-linux:
+    deps: [install-deps]
+    desc: "Build for Linux"
+    cmds:
+      - go build -a -installsuffix cgo -tags "netgo" -installsuffix netgo -o bin/go-task-play cmd/main.go
+    env:
+      CGO_ENABLED: 0
+      GOOS: linux
+      GOARCH: amd64
+    sources:
+      - "**/*.go"
+      - go.mod
+    generates:
+      - bin/go-task-play
+
+  build-docker:
+    desc: "Build a docker image"
+    cmds:
+      - docker build -t go-task-play -f Dockerfile .
+    sources:
+      - "**/*.go"
+      - go.mod
+      - Dockerfile
+
+  test:
+    deps:
+      - install-deps
+    desc: "Run tests"
+    cmds:
+      - go test ./...
+
+  clean:
+    desc: "Clean up"
+    prompt: This is a dangerous command... Do you want to continue?
+    cmds:
+      - rm -f bin/*
+
+  run-docker:
+    desc: "Run the docker image"
+    deps: [build-docker]
+    cmds:
+      - docker run -d -p 8080:8080 go-task-play
